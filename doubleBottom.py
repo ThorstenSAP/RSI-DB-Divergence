@@ -4,8 +4,7 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
-msft = yf.Ticker("DOW")
-res = msft.history("3mo", "1d")
+
 #._values holds the data in an array with the following format 
 # [Open, High, Low, Close, Volume, Dividends, Splits]
 closeIndex = 3
@@ -13,12 +12,8 @@ lowIndex = 2
 
 rsiLength = 14
 daysAheadThreshold = 2
-threshold = 1.5
-lowerLowThreshold = 0.99
 
-aPotentailLows = [] #keeps track of the indices of the potential lows
-aLows = [] # the actual lows
-aDoubleBottoms = [] 
+
 
 #._values will have the latest data on top (at index 0)
 #print(res._values[0][3])
@@ -56,10 +51,14 @@ def calc_rsi(over: pd.Series, fn_roll: Callable) -> pd.Series:
 
 
 def getDoubleBottoms(yfResponse):
+    aPotentailLows = [] #keeps track of the indices of the potential lows
+    aLows = [] # the actual lows
+    #aDoubleBottoms = [] 
+
     #set index to the last possible day
-    amntData = len(yfResponse._values) - 1
+    amntData = len(yfResponse._values) - 2 #Two candles are considered
     index = 0
-    while index < amntData:
+    while index < amntData: 
         # searched the next two candles no lower low
 
         #criteria 2: it closes lower during the next two days
@@ -114,7 +113,7 @@ def getDoubleBottoms(yfResponse):
         while secondIndex < amntLows - 1:
             secondLowIndex = aLows[secondIndex]
             if (0.985 < yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] and yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] < 1.015):
-                print ("DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
+                #print ("DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
                 if (yfResponse.rsi._values[secondLowIndex] / yfResponse.rsi._values[firstLowIndex] > 1.3):
                     print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
             
@@ -123,12 +122,17 @@ def getDoubleBottoms(yfResponse):
         firstIndex = firstIndex + 1 
 
 
-
-res.rsi = calc_rsi(res['Close'], lambda s: s.ewm(alpha=1 / rsiLength).mean())
-getDoubleBottoms(res)
+dow = si.tickers_dow()
+#dow = ['AAPL', 'DOW', 'DIS']
+for ticker in dow:
+    print(ticker)
+    stock = yf.Ticker(ticker)
+    res = stock.history("3mo", "1d")
+    res.rsi = calc_rsi(res['Close'], lambda s: s.ewm(alpha=1 / rsiLength).mean())
+    getDoubleBottoms(res)
 
 # http://theautomatic.net/yahoo_fin-documentation/
 # Loop with each ticker over the script
-print (si.tickers_dow())
-print (si.tickers_sp500())
-print (si.tickers_nasdaq())
+#print (si.tickers_dow())
+#print (si.tickers_sp500())
+#print (si.tickers_nasdaq())
