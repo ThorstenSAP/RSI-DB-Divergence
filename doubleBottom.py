@@ -53,7 +53,7 @@ def calc_rsi(over: pd.Series, fn_roll: Callable) -> pd.Series:
 def getDoubleBottoms(yfResponse):
     aPotentailLows = [] #keeps track of the indices of the potential lows
     aLows = [] # the actual lows
-    #aDoubleBottoms = [] 
+    aDoubleBottoms = [] 
 
     #set index to the last possible day
     amntData = len(yfResponse._values) - 2 #Two candles are considered
@@ -114,8 +114,19 @@ def getDoubleBottoms(yfResponse):
             secondLowIndex = aLows[secondIndex]
             if (0.985 < yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] and yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] < 1.015):
                 #print ("DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
-                if (yfResponse.rsi._values[secondLowIndex] / yfResponse.rsi._values[firstLowIndex] > 1.3):
-                    print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
+                #DONT divide by 0.0
+                if (yfResponse.rsi._values[secondLowIndex] != 0 and yfResponse.rsi._values[firstLowIndex] != 0):
+                    if (yfResponse.rsi._values[secondLowIndex] / yfResponse.rsi._values[firstLowIndex] > 1.3):
+                        #ensure that one first bottom will not occur more than 3 times
+                        cnt = 0
+                        aDoubleBottoms.append(firstLowIndex)
+                        for doublebottomFirstIndex in aDoubleBottoms:
+                            if doublebottomFirstIndex == firstLowIndex:
+                                cnt = cnt +1
+                        
+                        if cnt <= 3:
+                            #aDoubleBottoms.append(firstLowIndex)
+                            print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
             
             secondIndex = secondIndex +1
         
@@ -136,3 +147,12 @@ for ticker in dow:
 #print (si.tickers_dow())
 #print (si.tickers_sp500())
 #print (si.tickers_nasdaq())
+tickers_dow
+tickers_ftse100
+tickers_ftse250
+tickers_ibovespa
+tickers_nasdaq
+tickers_nifty50
+tickers_niftybank
+tickers_other
+tickers_sp500
