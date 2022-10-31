@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import xlsxwriter
 import datetime
+from datetime import datetime
 
 
 #._values holds the data in an array with the following format 
@@ -47,6 +48,10 @@ def resultToExcel(oResult, worksheet, row):
         #incrementieren der Zeilennummer
         row = row + 1
 
+def daysBetween(d1, d2):
+    #d1 = datetime.strptime(d1, "%Y-%m-%d")
+    #d2 = datetime.strptime(d2, "%Y-%m-%d")
+    return abs((d2 - d1).days)
 
 #Stolen from: https://stackoverflow.com/questions/20526414/relative-strength-index-in-python-pandas
 # Define function to calculate the RSI
@@ -155,10 +160,10 @@ def getDoubleBottoms(yfResponse, ticker, worksheet, worksheetRow):
                                 cnt = cnt +1
                         
                         if cnt <= 3:
-                            # TODO check if date of secondLowIndex is within the past 5 days
-                            #aDoubleBottoms.append(firstLowIndex)
-                            oRes['result'].append([firstLowIndex, secondLowIndex])
-                            print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
+                            # check if date of secondLowIndex is within the past 5 days. Since, the date is used make the threshold of days to 7
+                            if(daysBetween(yfResponse.index.date[secondLowIndex], datetime.today().date()) < 7):
+                                oRes['result'].append([firstLowIndex, secondLowIndex])
+                                print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
             
             secondIndex = secondIndex +1
         
