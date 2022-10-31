@@ -3,6 +3,8 @@ import yahoo_fin.stock_info as si
 from typing import Callable
 import numpy as np
 import pandas as pd
+import xlsxwriter
+import datetime
 
 
 #._values holds the data in an array with the following format 
@@ -19,6 +21,31 @@ daysAheadThreshold = 2
 #print(res._values[0][3])
 #Date is store here
 #res.index.date[64]
+def writeHeaderInExcel(worksheet):
+    worksheet.write('A1', 'Ticker')
+    worksheet.write('B1', 'Date1')
+    worksheet.write('C1', 'Date2')
+#    worksheet.write('D1', 'Trend vorher vorhanden')
+#    worksheet.write('E1', 'RSI Divergenz')
+#    worksheet.write('F1', 'Double-Bottom / Top')
+#    worksheet.write('G1', 'Treffer')
+#    worksheet.write('H1', 'Nach wie vielen Tagen ist der Kurs gestiegen')
+#    worksheet.write('I1', 'Wie viel Prozent ist der Kurs gedippt bevor er gestiegen ist')
+#    worksheet.write('J1', 'Tage bis zur ersten Roten kerze')
+#    worksheet.write('K1', 'Gewinn / Verlust')
+#    worksheet.write('L1', 'Gewinn / Verlust in %')
+
+
+def resultToExcel(oResult, worksheet, row):
+    writeHeaderInExcel(worksheet)
+
+    #For-Schleife über die Namen
+    for firstIndex, secondIndex in oResult['result']:
+        worksheet.write('A'+str(row), oResult['ticker'])
+        worksheet.write('B'+str(row), oResult['data'].index.date[firstIndex].strftime('%d.%m.%Y')) #.strftime('%x') in order that the xlsx file will accept the format
+        worksheet.write('C'+str(row), oResult['data'].index.date[secondIndex].strftime('%d.%m.%Y'))
+        #incrementieren der Zeilennummer
+        row = row + 1
 
 
 #Stolen from: https://stackoverflow.com/questions/20526414/relative-strength-index-in-python-pandas
@@ -50,10 +77,13 @@ def calc_rsi(over: pd.Series, fn_roll: Callable) -> pd.Series:
 
 
 
-def getDoubleBottoms(yfResponse):
+def getDoubleBottoms(yfResponse, ticker, worksheet, worksheetRow):
     aPotentailLows = [] #keeps track of the indices of the potential lows
     aLows = [] # the actual lows
     aDoubleBottoms = [] 
+    oRes = {'ticker': ticker,
+            'result': [],
+            'data':yfResponse}
 
     #set index to the last possible day
     amntData = len(yfResponse._values) - 2 #Two candles are considered
@@ -127,12 +157,23 @@ def getDoubleBottoms(yfResponse):
                         if cnt <= 3:
                             # TODO check if date of secondLowIndex is within the past 5 days
                             #aDoubleBottoms.append(firstLowIndex)
+                            oRes['result'].append([firstLowIndex, secondLowIndex])
                             print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
             
             secondIndex = secondIndex +1
         
-        firstIndex = firstIndex + 1 
+        firstIndex = firstIndex + 1
 
+    # prefill an Excel file
+    resultToExcel(oRes, worksheet, worksheetRow)
+    #return the updated row. Hence, it will kept updating
+    return worksheetRow + len(oRes['result'])
+
+
+# Create XLSX for output
+workbook = xlsxwriter.Workbook('testDB.xlsx')
+worksheet = workbook.add_worksheet('Tabellenname')
+worksheetRow = 2 # start to fill data in row 2
 
 dow = si.tickers_dow()
 #dow = ['AAPL', 'DOW', 'DIS']
@@ -141,7 +182,9 @@ for ticker in dow:
     stock = yf.Ticker(ticker)
     res = stock.history("3mo", "1d")
     res.rsi = calc_rsi(res['Close'], lambda s: s.ewm(alpha=1 / rsiLength).mean())
-    getDoubleBottoms(res)
+    worksheetRow = getDoubleBottoms(res, ticker, worksheet, worksheetRow)
+
+workbook.close()
 
 # http://theautomatic.net/yahoo_fin-documentation/
 # Loop with each ticker over the script
