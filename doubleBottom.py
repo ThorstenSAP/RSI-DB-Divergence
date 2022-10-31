@@ -116,7 +116,7 @@ def getDoubleBottoms(yfResponse):
                 #print ("DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
                 #DONT divide by 0.0
                 if (yfResponse.rsi._values[secondLowIndex] != 0 and yfResponse.rsi._values[firstLowIndex] != 0):
-                    if (yfResponse.rsi._values[secondLowIndex] / yfResponse.rsi._values[firstLowIndex] > 1.3):
+                    if (yfResponse.rsi._values[secondLowIndex] / yfResponse.rsi._values[firstLowIndex] > 1.2):
                         #ensure that one first bottom will not occur more than 3 times
                         cnt = 0
                         aDoubleBottoms.append(firstLowIndex)
@@ -125,6 +125,7 @@ def getDoubleBottoms(yfResponse):
                                 cnt = cnt +1
                         
                         if cnt <= 3:
+                            # TODO check if date of secondLowIndex is within the past 5 days
                             #aDoubleBottoms.append(firstLowIndex)
                             print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
             
@@ -147,12 +148,12 @@ for ticker in dow:
 #print (si.tickers_dow())
 #print (si.tickers_sp500())
 #print (si.tickers_nasdaq())
-tickers_dow
-tickers_ftse100
-tickers_ftse250
-tickers_ibovespa
-tickers_nasdaq
-tickers_nifty50
-tickers_niftybank
-tickers_other
-tickers_sp500
+#tickers_dow
+#tickers_ftse100
+#tickers_ftse250
+#tickers_ibovespa
+#tickers_nasdaq
+#tickers_nifty50
+#tickers_niftybank
+#tickers_other
+#tickers_sp500
