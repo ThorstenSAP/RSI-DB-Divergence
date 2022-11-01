@@ -1,3 +1,4 @@
+from pickle import TRUE
 import yfinance as yf
 import yahoo_fin.stock_info as si
 from typing import Callable
@@ -16,25 +17,13 @@ lowIndex = 2
 rsiLength = 14
 daysAheadThreshold = 2
 
+pommesbuden = ['ACAHU', 'AFAC', 'AFAQ', 'AFAQU', 'AFARU', 'AIRTP', 'ANZUU', 'AXCBU', 'ATAKU', 'BCSA', 'BHAC', 'BNNRU', 'BWAQ', 'CBRG', 'CBRGU', 'CDAQU', 'COOLU', '' ]
 
 
-#._values will have the latest data on top (at index 0)
-#print(res._values[0][3])
-#Date is store here
-#res.index.date[64]
 def writeHeaderInExcel(worksheet):
     worksheet.write('A1', 'Ticker')
     worksheet.write('B1', 'Date1')
     worksheet.write('C1', 'Date2')
-#    worksheet.write('D1', 'Trend vorher vorhanden')
-#    worksheet.write('E1', 'RSI Divergenz')
-#    worksheet.write('F1', 'Double-Bottom / Top')
-#    worksheet.write('G1', 'Treffer')
-#    worksheet.write('H1', 'Nach wie vielen Tagen ist der Kurs gestiegen')
-#    worksheet.write('I1', 'Wie viel Prozent ist der Kurs gedippt bevor er gestiegen ist')
-#    worksheet.write('J1', 'Tage bis zur ersten Roten kerze')
-#    worksheet.write('K1', 'Gewinn / Verlust')
-#    worksheet.write('L1', 'Gewinn / Verlust in %')
 
 
 def resultToExcel(oResult, worksheet, row):
@@ -180,14 +169,23 @@ workbook = xlsxwriter.Workbook('testDB.xlsx')
 worksheet = workbook.add_worksheet('Tabellenname')
 worksheetRow = 2 # start to fill data in row 2
 
+
 dow = si.tickers_dow()
+#nasdaq = si.tickers_nasdaq()
+sp500 = si.tickers_sp500()
+# TODO pommesbuden aus der nasdaq filtern
+#appleIncome = si.get_cash_flow('aapl', yearly = True)
+
+#other = si.tickers_other()
 #dow = ['AAPL', 'DOW', 'DIS']
-for ticker in dow:
-    print(ticker)
-    stock = yf.Ticker(ticker)
-    res = stock.history("3mo", "1d")
-    res.rsi = calc_rsi(res['Close'], lambda s: s.ewm(alpha=1 / rsiLength).mean())
-    worksheetRow = getDoubleBottoms(res, ticker, worksheet, worksheetRow)
+indizes = [dow, sp500]
+for index in indizes:
+    for ticker in index:
+        print(ticker)
+        stock = yf.Ticker(ticker)
+        res = stock.history("3mo", "1d")
+        res.rsi = calc_rsi(res['Close'], lambda s: s.ewm(alpha=1 / rsiLength).mean())
+        worksheetRow = getDoubleBottoms(res, ticker, worksheet, worksheetRow)
 
 workbook.close()
 
