@@ -41,6 +41,10 @@ def daysBetween(d1, d2):
     #d2 = datetime.strptime(d2, "%Y-%m-%d")
     return abs((d2 - d1).days)
 
+def printLows(yfResponse, aLows):
+    for lowIndex in aLows:
+        print(yfResponse.index.date[lowIndex], ' - ', lowIndex)
+
 #Stolen from: https://stackoverflow.com/questions/20526414/relative-strength-index-in-python-pandas
 # Define function to calculate the RSI
 def calc_rsi(over: pd.Series, fn_roll: Callable) -> pd.Series:
@@ -106,22 +110,29 @@ def getDoubleBottoms(yfResponse, ticker, worksheet, worksheetRow):
         #do something
         index = index + 1
 
-    #ensure that each potentail low is checked against its past. Hence, it is not an potentail low if it had a lower low the two days before
+    #ensure that each potentail low is checked against its past and its future (elif part). Hence, it is not an potentail low if it had a lower low the daysBackThreshold days before or after
     for potentialLowIndex in aPotentailLows:
-        daysBackThreshold = 2
+        daysBackThreshold = 4
         daysBack = 1
         bLowerLow = False
         while daysBack <= daysBackThreshold:
+            daysAhead = potentialLowIndex + daysBack
 
             if(yfResponse._values[potentialLowIndex - daysBack][closeIndex] < yfResponse._values[potentialLowIndex][closeIndex]):
                 bLowerLow = True
                 break
+            elif daysAhead < len(yfResponse._values): #safety check for out of index
+                if (yfResponse._values[potentialLowIndex + daysBack][closeIndex] < yfResponse._values[potentialLowIndex][closeIndex]):
+                    bLowerLow = True
+                    break
 
-            if daysBack == daysAheadThreshold and bLowerLow == False:
+            if daysBack == daysBackThreshold and bLowerLow == False:
                 aLows.append(potentialLowIndex) if potentialLowIndex not in aLows else aLows
 
             daysBack = daysBack + 1        
 
+
+    #printLows(yfResponse, aLows)
 
     #first loop goes until the second last entry
     #second loop is always one entry ahead of the first one. Hence, it goes until the last entry
@@ -147,11 +158,11 @@ def getDoubleBottoms(yfResponse, ticker, worksheet, worksheetRow):
                             if doublebottomFirstIndex == firstLowIndex:
                                 cnt = cnt +1
                         
-                        if cnt <= 3:
+                        #if cnt <= 3:
                             # check if date of secondLowIndex is within the past 5 days. Since, the date is used make the threshold of days to 7
-                            if(daysBetween(yfResponse.index.date[secondLowIndex], datetime.today().date()) < 7):
-                                oRes['result'].append([firstLowIndex, secondLowIndex])
-                                print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
+                        #    if(daysBetween(yfResponse.index.date[secondLowIndex], datetime.today().date()) < 7):
+                        #        oRes['result'].append([firstLowIndex, secondLowIndex])
+                        #        print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
             
             secondIndex = secondIndex +1
         
@@ -177,8 +188,9 @@ nasdaqTickersAdj2 = ['PGC', 'PGEN', 'PGNY', 'PGRW', 'PHAR', 'PHIO', 'PHVS', 'PI'
 
 
 #other = si.tickers_other()
-#dow = ['AAPL', 'DOW', 'DIS']
+dow = ['DOW', 'GS', ]
 indizes = [dow, sp500, nasdaqTickersAdj1, nasdaqTickersAdj2]
+indizes = [dow]
 for index in indizes:
     for ticker in index:
         print(ticker)
