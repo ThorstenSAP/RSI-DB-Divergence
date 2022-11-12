@@ -23,16 +23,20 @@ def writeHeaderInExcel(worksheet):
     worksheet.write('A1', 'Ticker')
     worksheet.write('B1', 'Date1')
     worksheet.write('C1', 'Date2')
+    worksheet.write('D1', 'Course Differenz in %')
+    worksheet.write('E1', 'RSI Differenz in %')
 
 
 def resultToExcel(oResult, worksheet, row):
     writeHeaderInExcel(worksheet)
 
     #For-Schleife über die Namen
-    for firstIndex, secondIndex in oResult['result']:
+    for firstIndex, secondIndex,  courseDiff, rsiDiff in oResult['result']:
         worksheet.write('A'+str(row), oResult['ticker'])
         worksheet.write('B'+str(row), oResult['data'].index.date[firstIndex].strftime('%d.%m.%Y')) #.strftime('%x') in order that the xlsx file will accept the format
         worksheet.write('C'+str(row), oResult['data'].index.date[secondIndex].strftime('%d.%m.%Y'))
+        worksheet.write('D'+str(row), 1-courseDiff)
+        worksheet.write('E'+str(row), 1-rsiDiff)
         #incrementieren der Zeilennummer
         row = row + 1
 
@@ -148,20 +152,30 @@ def getDoubleBottoms(yfResponse, ticker, worksheet, worksheetRow):
         while secondIndex <= amntLows - 1:
             secondLowIndex = aLows[secondIndex]
             #If the lows (the closing) are within 1.5% of each other and the lows are not further away than 30 days
-            if (0.985 < yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] and yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] < 1.015 and 
+            if (0.98 < yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] and yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] < 1.02 and 
                 daysBetween(yfResponse.index.date[firstLowIndex],yfResponse.index.date[secondLowIndex]) <= 30):
                 
-                print ("DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
-                oRes['result'].append([firstLowIndex, secondLowIndex])
+
+                #User current results only
+                if(daysBetween(yfResponse.index.date[secondLowIndex], datetime.today().date()) < 7):
+                    courseDiff = yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex]
+                    rsiDiff = yfResponse.rsi._values[firstLowIndex] / yfResponse.rsi._values[secondLowIndex]
+
+                    oRes['result'].append([firstLowIndex, secondLowIndex, courseDiff, rsiDiff])
+                    print("RSI Divergence + DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
+                #print ("DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
+                #oRes['result'].append([firstLowIndex, secondLowIndex])
+                
+                #''''''''''''''''''RSI Divergenz''''''''''''''''''
                 #DONT divide by 0.0
-                if (yfResponse.rsi._values[secondLowIndex] != 0 and yfResponse.rsi._values[firstLowIndex] != 0):
-                    if (yfResponse.rsi._values[secondLowIndex] / yfResponse.rsi._values[firstLowIndex] > 1.2):
+                #if (yfResponse.rsi._values[secondLowIndex] != 0 and yfResponse.rsi._values[firstLowIndex] != 0):
+                #    if (yfResponse.rsi._values[secondLowIndex] / yfResponse.rsi._values[firstLowIndex] > 1.2):
                         #ensure that one first bottom will not occur more than 3 times
-                        cnt = 0
-                        aDoubleBottoms.append(firstLowIndex)
-                        for doublebottomFirstIndex in aDoubleBottoms:
-                            if doublebottomFirstIndex == firstLowIndex:
-                                cnt = cnt +1
+                #        cnt = 0
+                #        aDoubleBottoms.append(firstLowIndex)
+                #        for doublebottomFirstIndex in aDoubleBottoms:
+                #            if doublebottomFirstIndex == firstLowIndex:
+                #                cnt = cnt +1
                         
                         #if cnt <= 3:
                             # check if date of secondLowIndex is within the past 5 days. Since, the date is used make the threshold of days to 7
@@ -193,9 +207,9 @@ nasdaqTickersAdj2 = ['PGC', 'PGEN', 'PGNY', 'PGRW', 'PHAR', 'PHIO', 'PHVS', 'PI'
 
 
 #other = si.tickers_other()
-#dow = ['HD']
+#dow = ['CVX']
 #indizes = [dow, sp500, nasdaqTickersAdj1, nasdaqTickersAdj2]
-indizes = [dow]
+indizes = [dow, sp500]
 for index in indizes:
     for ticker in index:
         print(ticker)
