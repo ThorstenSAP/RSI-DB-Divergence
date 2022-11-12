@@ -45,6 +45,7 @@ def printLows(yfResponse, aLows):
     for lowIndex in aLows:
         print(yfResponse.index.date[lowIndex], ' - ', lowIndex)
 
+
 #Stolen from: https://stackoverflow.com/questions/20526414/relative-strength-index-in-python-pandas
 # Define function to calculate the RSI
 def calc_rsi(over: pd.Series, fn_roll: Callable) -> pd.Series:
@@ -140,14 +141,18 @@ def getDoubleBottoms(yfResponse, ticker, worksheet, worksheetRow):
     firstIndex = 0
     secondIndex = 0
 
-    while firstIndex < amntLows - 2:
+    while firstIndex <= amntLows - 2:
         secondIndex = firstIndex + 1 # second index is at least one step ahead of first index
         firstLowIndex = aLows[firstIndex] # ensure to get the index of the actual low
         
-        while secondIndex < amntLows - 1:
+        while secondIndex <= amntLows - 1:
             secondLowIndex = aLows[secondIndex]
-            if (0.985 < yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] and yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] < 1.015):
-                #print ("DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
+            #If the lows (the closing) are within 1.5% of each other and the lows are not further away than 30 days
+            if (0.985 < yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] and yfResponse._values[firstLowIndex][closeIndex] / yfResponse._values[secondLowIndex][closeIndex] < 1.015 and 
+                daysBetween(yfResponse.index.date[firstLowIndex],yfResponse.index.date[secondLowIndex]) <= 30):
+                
+                print ("DB: ", yfResponse.index.date[firstLowIndex], " - ", yfResponse.index.date[secondLowIndex])
+                oRes['result'].append([firstLowIndex, secondLowIndex])
                 #DONT divide by 0.0
                 if (yfResponse.rsi._values[secondLowIndex] != 0 and yfResponse.rsi._values[firstLowIndex] != 0):
                     if (yfResponse.rsi._values[secondLowIndex] / yfResponse.rsi._values[firstLowIndex] > 1.2):
@@ -175,7 +180,7 @@ def getDoubleBottoms(yfResponse, ticker, worksheet, worksheetRow):
 
 
 # Create XLSX for output
-workbook = xlsxwriter.Workbook('DB.xlsx')
+workbook = xlsxwriter.Workbook('DoubleBottom.xlsx')
 worksheet = workbook.add_worksheet('Tabellenname')
 worksheetRow = 2 # start to fill data in row 2
 
@@ -188,8 +193,8 @@ nasdaqTickersAdj2 = ['PGC', 'PGEN', 'PGNY', 'PGRW', 'PHAR', 'PHIO', 'PHVS', 'PI'
 
 
 #other = si.tickers_other()
-dow = ['DOW', 'GS', ]
-indizes = [dow, sp500, nasdaqTickersAdj1, nasdaqTickersAdj2]
+#dow = ['HD']
+#indizes = [dow, sp500, nasdaqTickersAdj1, nasdaqTickersAdj2]
 indizes = [dow]
 for index in indizes:
     for ticker in index:
